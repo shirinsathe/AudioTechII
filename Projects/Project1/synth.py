@@ -47,7 +47,9 @@ def params_CLI():
         'modulation': 'none',
         'mod_ratio': 0,
         'mod_index': 0,
-        'reverb': False,
+        'delay': False,
+        'delay_time': 0.5,
+        'dry_wet': 0.5,
         'adsr': (20, 20, 0.8, 30) 
     }
 
@@ -137,14 +139,14 @@ def params_CLI():
         synth_params['adsr'] = (attack, decay, sustain, release)
         
         # EFFECTS
-        print("\nAdd reverb?:")
+        print("\nAdd delay?:")
         print("1 - Yes")
         print("2 - No")
-        reverb = int(input("> "))
-        if reverb == 1:
-            synth_params['reverb'] = True
-        elif reverb == 2:
-            synth_params['reverb'] = False
+        delay = int(input("> "))
+        if delay == 1:
+            synth_params['delay'] = True
+        elif delay == 2:
+            synth_params['delay'] = False
 
     return(synth_params)
 
@@ -154,7 +156,19 @@ def params_CLI():
 def gen_note(freq, dur, amp, synth_params):
     fs = synth_params['fs']
     osc_type = synth_params['osc_type']
-    note = synth_helpers.gen_wave(osc_type, freq, dur, fs, amp)
+    modulation = synth_params['modulation']
+    mod_ratio = synth_params['mod_ratio']
+    mod_index = synth_params['mod_index']
+    adsr_params = synth_params['adsr']
+
+    if modulation == 'fm':
+        note = synth_helpers.fm_synth(osc_type, freq, mod_index, mod_ratio, dur, fs=fs, amp=amp)
+    elif modulation == 'am':
+        note = synth_helpers.am_synth(osc_type, freq, mod_index, mod_ratio, dur, fs=fs, amp=amp)
+    else:
+        note = synth_helpers.gen_wave(osc_type, freq, dur, fs=fs, amp=amp)
+
+    note = synth_helpers.adsr(note, attack = adsr_params[0], decay = adsr_params[1], sustain = adsr_params[2], release = adsr_params[3], fs=fs)
     return note
 
 
@@ -163,19 +177,31 @@ def gen_note(freq, dur, amp, synth_params):
 # I've provided starter code for stepping through the note_list created by parse_midi, but you may want to modify depending on your signal flow and params.
 # Think about the order you want to apply the functions. Also think about what should be applied to the note level vs the file level.
 def synth(note_list, synth_params):
-    song = np.array([])
+    total_duration = sum([note[1] for note in note_list])
+    fs = synth_params['fs']
+    total_samples = int(total_duration * fs)
+    song = np.zeros(total_samples)
+
+    current_sample = 0
+
     for note in note_list:
         freq = note[0]
         dur = note[1]
         amp = note[2]
         synth_note = gen_note(freq, dur, amp, synth_params)
-        # Though I'm not a huge fan of appending/concatenating, it is okay for this assignment. 
-        # If you choose to pre-allocate (correctly), you'll recieve extra credit.
-        song = np.concatenate((song, synth_note))
-   
-    # TODO: Update this. This is just an example for reading into the synth_params dictionary
-    if synth_params['reverb']: # remember reverb will be true/false in my example
-        song = synth_helpers.reverb(song, 'file_path')
+        note_samples = len(synth_note)
+        song[current_sample:current_sample+note_samples] += synth_note
+        current_sample += note_samples
+
+    song = song[:current_sample]
+
+    if synth_params['delay']:
+        song = synth_helpers.delay(song, delay_time=synth_params['delay_time'], dry_wet=synth_params['dry_wet'], fs=synth_params['fs'])
+
+    #normalize song to prevent clipping
+    max_amp = np.max(np.abs(song))
+    if max_amp > 0:
+        song = song / max_amp * 0.95
 
     return song
 

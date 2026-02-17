@@ -53,8 +53,30 @@ def adsr(data, attack, decay, sustain, release, fs=44100):
     The function should return a numpy array
     sig (numpy array) = the modified, enveloped signal
     """
-    sig = data
-    return sig
+
+    if attack + decay + release > 100:
+        print("Please insert values that are shorter than 100% total.")
+        return data
+    
+    x = data
+    attackSamps = int((attack / 100) * len(x))
+    decaySamps = int((decay / 100) * len(x))
+    releaseSamps = int((release / 100) * len(x))
+    sustainSamps = len(x) - attackSamps - decaySamps - releaseSamps
+
+
+    attackSamps = int((attack / 100) * len(x))
+    decaySamps = int((decay / 100) * len(x))
+    releaseSamps = int((release / 100) * len(x))
+
+    sustainSamps = len(x) - (attackSamps + decaySamps + releaseSamps)
+    attackDur = np.linspace(0, 1, attackSamps)
+    decayDur = np.linspace(1, sustain, decaySamps)
+    sustainDur = np.full(sustainSamps, sustain)
+    releaseDur = np.linspace(sustain, 0, releaseSamps)
+    env = np.concatenate([attackDur, decayDur, sustainDur, releaseDur])
+    return x * env
+
 
 
 # TODO: Replace the code below with your implementation of a FM synthesis
