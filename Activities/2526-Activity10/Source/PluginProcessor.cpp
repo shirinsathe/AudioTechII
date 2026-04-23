@@ -91,9 +91,18 @@ void _2526Activity10AudioProcessor::changeProgramName (int index, const juce::St
 }
 
 //==============================================================================
-void _2526Activity10AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void _2526Activity10AudioProcessor::prepareToPlay (double sampleRate, int numSamplesPerBlock)
 {
     // You need to initialize your variables here!
+    samplingRate = sampleRate;
+    samplesPerBlock = numSamplesPerBlock;
+    
+    freq = 440;
+    phase = 0;
+    amp = 1;
+    
+    envSamples = samplingRate * int(envSec);
+    envTracker = 0;
     
 }
 
@@ -150,8 +159,25 @@ void _2526Activity10AudioProcessor::processBlock (juce::AudioBuffer<float>& buff
 
 void _2526Activity10AudioProcessor::genSineWave(juce::AudioBuffer<float>& buffer)
 {
+    float phaseStart = phase;
     // Fill the buffer (in place) with a sinusoid
-    // your code goes here!
+    for (int channel = 0; channel < buffer.getNumChannels(); channel++) {
+        
+        auto*channelData = buffer.getWritePointer(channel);
+        phase = phaseStart;
+        
+        for (int i = 0; i < samplesPerBlock; i++) {
+            channelData[i] = amp * sinf(phase);
+            
+            phase += juce::MathConstants<float>::twoPi * freq / samplingRate;
+            
+            if (phase >= juce::MathConstants<float>::twoPi){
+                phase -= juce::MathConstants<float>::twoPi;
+            };
+            
+        };
+    };
+    
     
 }
 
@@ -161,6 +187,28 @@ void _2526Activity10AudioProcessor::applyEnvRamp(juce::AudioBuffer<float>& buffe
     // Apply an amplitude envelope to the buffer (in place)
     // Multiply each sample by an envelope value (0 → 1 → 0)
     // your code goes here!
+    int envStart = envTracker;
+    float envVal;
+    float halfLen = float(envSamples) / 2;
+
+    for (int channel = 0; channel < buffer.getNumChannels(); channel++) {
+        auto*channelData = buffer.getWritePointer(channel);
+        envTracker = envStart;
+        for (int i = 0; i < samplesPerBlock; i++) {
+            if (envTracker < halfLen) {
+                envVal = envTracker / halfLen;
+            }
+            else {
+                envVal = 1 - (envTracker - halfLen)/halfLen;
+            }
+            channelData[i] *= envVal;
+            envTracker++;
+            
+            if (envTracker >= envSamples) {
+                envTracker = 0;
+            }
+        };
+    };
 }
 
 //==============================================================================
