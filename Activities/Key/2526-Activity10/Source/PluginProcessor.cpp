@@ -19,13 +19,22 @@ _2526Activity10AudioProcessor::_2526Activity10AudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
 #endif
+apvts(*this, nullptr, "Parameters", createParams())
 {
 }
 
 _2526Activity10AudioProcessor::~_2526Activity10AudioProcessor()
 {
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout _2526Activity10AudioProcessor::createParams()
+{
+    return {
+        std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"gain", 1}, "Gain", 0, 1, 0.5),
+        std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"freq", 1}, "Frequency", 50, 5000, 440)
+    };
 }
 
 //==============================================================================
@@ -68,8 +77,7 @@ double _2526Activity10AudioProcessor::getTailLengthSeconds() const
 
 int _2526Activity10AudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1;
 }
 
 int _2526Activity10AudioProcessor::getCurrentProgram()
@@ -161,14 +169,20 @@ void _2526Activity10AudioProcessor::processBlock (juce::AudioBuffer<float>& buff
         buffer.clear (i, 0, buffer.getNumSamples());
 
     genSineWave(buffer);
-//    applyEnvRamp(buffer);
+    applyEnvRamp(buffer);
     applyLFO(buffer);
 }
 
 void _2526Activity10AudioProcessor::genSineWave(juce::AudioBuffer<float>& buffer)
 {
-    // Fill the buffer (in place) with a sinusoid
     float phaseStart = phase;
+    
+    auto* gainParam = apvts.getRawParameterValue("gain");
+    amp = gainParam->load();
+    
+    auto* freqParam = apvts.getRawParameterValue("freq");
+    freq = freqParam->load();
+    
     for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
     {
         phase = phaseStart;
@@ -236,7 +250,7 @@ void _2526Activity10AudioProcessor::applyLFO(juce::AudioBuffer<float>& buffer) {
 //==============================================================================
 bool _2526Activity10AudioProcessor::hasEditor() const
 {
-    return true; // (change this to false if you choose to not supply an editor)
+    return false; // (change this to false if you choose to not supply an editor)
 }
 
 juce::AudioProcessorEditor* _2526Activity10AudioProcessor::createEditor()

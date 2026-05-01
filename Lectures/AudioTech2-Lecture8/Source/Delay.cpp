@@ -91,7 +91,7 @@ float Delay::processSample(float inputSample, int channel)
 
     modDelay = std::clamp<float>(modDelay, 0.001f, (delayBufferSize / sampleRate));
 
-    //delaySamples = int (modDelay * sampleRate);
+    delaySamples =  modDelay * sampleRate;
 
     //int readTail = (writeHead - delaySamples + delayBufferSize) % delayBufferSize;
 

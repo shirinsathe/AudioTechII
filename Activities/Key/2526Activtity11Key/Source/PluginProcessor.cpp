@@ -106,8 +106,8 @@ void _2526Activtity11KeyAudioProcessor::prepareToPlay (double sampleRate, int sa
     samplingRate = sampleRate;
     numSamplesPerBlock = samplesPerBlock;
     
-//    freq = 440;
-//    amp = 1;
+    freq = 440;
+    amp = 1;
     phase = 0;
         
     // envelope length in samples;

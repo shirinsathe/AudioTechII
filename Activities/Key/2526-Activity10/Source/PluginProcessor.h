@@ -52,6 +52,8 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+    
+    juce::AudioProcessorValueTreeState apvts;
 
 private:
     //==============================================================================
@@ -75,6 +77,8 @@ private:
     float lfoFreq;
     float lfoAmp;
     float lfoPhase;
+    
+    juce::AudioProcessorValueTreeState::ParameterLayout createParams();
     
     void genSineWave(juce::AudioBuffer<float>& buffer);
     void applyEnvRamp(juce::AudioBuffer<float>& buffer);
